@@ -1,0 +1,8 @@
+*.local.*
+.env
+.env.*
+!.env.example
+private/
+backups/
+logs/
+.DS_Store
