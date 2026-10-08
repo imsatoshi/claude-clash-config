@@ -67,6 +67,10 @@ rules:
 - AND,((NETWORK,udp),(DOMAIN-SUFFIX,clau.de)),REJECT
 - AND,((NETWORK,udp),(DOMAIN-SUFFIX,claude.dev)),REJECT
 - AND,((NETWORK,udp),(DOMAIN,servd-anthropic-website.b-cdn.net)),REJECT
+- AND,((NETWORK,udp),(DOMAIN,http-intake.logs.us5.datadoghq.com)),REJECT
+- AND,((NETWORK,udp),(DOMAIN,browser-intake-us5-datadoghq.com)),REJECT
+- AND,((NETWORK,udp),(IP-CIDR,160.79.104.0/23,no-resolve)),REJECT
+- AND,((NETWORK,udp),(IP-CIDR6,2607:6bc0::/48,no-resolve)),REJECT
 - AND,((NETWORK,udp),(PROCESS-NAME,claude)),REJECT
 - AND,((NETWORK,udp),(PROCESS-NAME,Claude)),REJECT
 - AND,((NETWORK,udp),(PROCESS-PATH-REGEX,^/Users/[^/]+/[.]local/share/claude/versions/[^/]+$)),REJECT
@@ -80,10 +84,14 @@ rules:
 - DOMAIN-SUFFIX,clau.de,Claude-ISP
 - DOMAIN-SUFFIX,claude.dev,Claude-ISP
 - DOMAIN,servd-anthropic-website.b-cdn.net,Claude-ISP
+- DOMAIN,http-intake.logs.us5.datadoghq.com,Claude-ISP
+- DOMAIN,browser-intake-us5-datadoghq.com,Claude-ISP
 - PROCESS-NAME,claude,Claude-ISP
 - PROCESS-NAME,Claude,Claude-ISP
 - PROCESS-PATH-REGEX,^/Users/[^/]+/[.]local/share/claude/versions/[^/]+$,Claude-ISP
 - PROCESS-PATH-REGEX,^/Applications/Claude[.]app/Contents/.*,Claude-ISP
+- IP-CIDR,160.79.104.0/23,Claude-ISP,no-resolve
+- IP-CIDR6,2607:6bc0::/48,Claude-ISP,no-resolve
 - GEOSITE,category-ads-all,REJECT
 - DOMAIN-SUFFIX,openai.com,Proxy
 - DOMAIN-SUFFIX,chatgpt.com,Proxy
@@ -372,6 +380,12 @@ dns:
     - https://1.1.1.1/dns-query#Claude-ISP
     - https://1.0.0.1/dns-query#Claude-ISP
     servd-anthropic-website.b-cdn.net:
+    - https://1.1.1.1/dns-query#Claude-ISP
+    - https://1.0.0.1/dns-query#Claude-ISP
+    http-intake.logs.us5.datadoghq.com:
+    - https://1.1.1.1/dns-query#Claude-ISP
+    - https://1.0.0.1/dns-query#Claude-ISP
+    browser-intake-us5-datadoghq.com:
     - https://1.1.1.1/dns-query#Claude-ISP
     - https://1.0.0.1/dns-query#Claude-ISP
   proxy-server-nameserver:

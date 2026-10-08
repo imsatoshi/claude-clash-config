@@ -26,8 +26,17 @@ function main(config) {
     "claude.ai", "claude.com", "anthropic.com", "claudeusercontent.com",
     "claudemcpcontent.com", "claudemcpclient.com", "clau.de", "claude.dev"
   ];
-  // Match only this Anthropic CDN host, not the shared b-cdn.net service.
-  const claudeExactDomains = ["servd-anthropic-website.b-cdn.net"];
+  // Match specific CDN and optional telemetry hosts, not entire shared services.
+  const claudeExactDomains = [
+    "servd-anthropic-website.b-cdn.net",
+    "http-intake.logs.us5.datadoghq.com",
+    "browser-intake-us5-datadoghq.com"
+  ];
+  // Official inbound client destinations only; /21 is an outbound source range.
+  const claudeIpRanges = [
+    ["IP-CIDR", "160.79.104.0/23"],
+    ["IP-CIDR6", "2607:6bc0::/48"]
+  ];
   const claudeGroup = "Claude-ISP";
   config["find-process-mode"] = "always";
   config.listeners = [
@@ -45,6 +54,7 @@ function main(config) {
   const claudeUdpRules = [
     ...claudeDomains.map(d => `AND,((NETWORK,udp),(DOMAIN-SUFFIX,${d})),REJECT`),
     ...claudeExactDomains.map(d => `AND,((NETWORK,udp),(DOMAIN,${d})),REJECT`),
+    ...claudeIpRanges.map(([type, cidr]) => `AND,((NETWORK,udp),(${type},${cidr},no-resolve)),REJECT`),
     ...claudeProcessRules.map(r => `AND,((NETWORK,udp),(${r.slice(0, r.lastIndexOf(","))})),REJECT`)
   ];
   const domestic = [
@@ -76,6 +86,7 @@ function main(config) {
     ...claudeDomains.map(d => `DOMAIN-SUFFIX,${d},${claudeGroup}`),
     ...claudeExactDomains.map(d => `DOMAIN,${d},${claudeGroup}`),
     ...claudeProcessRules,
+    ...claudeIpRanges.map(([type, cidr]) => `${type},${cidr},${claudeGroup},no-resolve`),
     "GEOSITE,category-ads-all,REJECT",
     ...overseas.map(d => `DOMAIN-SUFFIX,${d},Proxy`),
     ...domestic.map(d => `DOMAIN-SUFFIX,${d},DIRECT`),

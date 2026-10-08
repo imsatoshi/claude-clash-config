@@ -8,7 +8,7 @@
 - Claude 指定域名：`Japan-Upstream → Dedicated-ISP → 目标`。
 - 普通海外流量：`Proxy → Japan-Upstream`。
 - 国内常用网站、局域网和共享地址空间按规则直连。
-- 专用 SOCKS5 仅配置 TCP，因此指定 Claude 域名和进程的 UDP 先拒绝，避免回落到普通代理或直连。
+- 专用 SOCKS5 仅配置 TCP，因此指定 Claude 域名、入站 IP 网段和进程的 UDP 先拒绝，避免回落到普通代理或直连。
 - Claude DNS 策略绑定 Claude-ISP；国内 DNS 使用直连 DoH。
 - `127.0.0.1:17898` 是固定走 Claude-ISP 的 HTTP 代理端口，可供 Claude Code 使用。
 
@@ -16,7 +16,7 @@
 
 - `clash.example.yaml`：完整示例，所有节点参数都是占位符。
 - `clash-verge-script.js`：订阅扩展脚本，集中生成域名规则、UDP 拒绝规则和 DNS 策略。
-- `claude-rules.list`：9 条域名规则；没有代理策略名称，也不包含 DNS 和 UDP 设置。
+- `claude-rules.list`：域名规则；没有代理策略名称，也不包含 DNS 和 UDP 设置。
 - `verify.py`：本地静态检查，不连接节点、不更改系统网络。
 
 ## 使用
@@ -32,7 +32,8 @@
 
 - 不包含原电脑两个业务服务器的直连例外，迁移到原环境时要从本地配置保留。
 - 进程规则面向 macOS；浏览器依靠域名规则，其他系统需调整进程路径。
-- 不包含第三方共享 CDN、遥测平台的宽泛兜底，不宣称覆盖 Claude 的所有外部资源。
+- 第三方 CDN、可选遥测仅匹配脚本列出的精确域名；不使用整个平台域名或关键词兜底。同一遥测接收地址也可能供其他应用使用，这些请求会一起分流；不宣称覆盖 Claude 的所有外部资源。
+- IP 兜底采用官方入站网段，不把 Anthropic 对外请求的源地址范围当作客户端必需目的地；IPv6 规则不代表节点具备 IPv6 连通能力。
 - 仅对列出的 Claude UDP 目标拒绝，不是全局 WebRTC 防泄漏方案。
 - TUN、IPv6 设置和分流规则不能等同于断网或休眠唤醒时的系统级 kill switch。
 - 代理出口、IP 检测分数不能保证服务账号可用或改变服务地区资格。
@@ -41,6 +42,7 @@
 
 ## 来源
 
+- [Anthropic 官方入站与出站 IP 说明](https://platform.claude.com/docs/en/api/ip-addresses)
 - [Claude 官方网络文档](https://code.claude.com/docs/en/network-config)
 - [v2fly Anthropic 域名集](https://github.com/v2fly/domain-list-community/blob/master/data/anthropic)
 - [Mihomo 规则文档](https://wiki.metacubex.one/config/rules/)
