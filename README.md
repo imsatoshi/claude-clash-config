@@ -28,6 +28,38 @@
 5. Claude Code 可在本地环境或用户 settings.json 的 env 中设置 `HTTP_PROXY`、`HTTPS_PROXY` 为 `http://127.0.0.1:17898`。这个设置不会自动覆盖工具启动的每一个子进程。
 6. 本地验证：`python3 verify.py`，需要 Python PyYAML 和 Node.js。填写节点后，再用本机 Mihomo 的 `-t -f clash.local.yaml` 检查。
 
+## Chrome WebRTC 隐私设置（macOS，可选）
+
+网页的 WebRTC/STUN 请求可能访问不属于 Claude 的服务器，因此 Claude 域名规则不能保证这些请求使用专用出口。检测页显示另一个代理出口，只能说明出口不一致，不能单凭这一点认定真实公网 IP 已泄露。
+
+Chrome 可通过 `WebRtcIPHandling = disable_non_proxied_udp` 限制 WebRTC 使用非代理 UDP。这是浏览器设置，导入本仓库的 Clash 配置不会自动启用，也不会改变国内 DIRECT 规则。它不等于彻底禁用 WebRTC，且可能影响网页通话的连通性或质量。
+
+以下方法适用于个人 Mac 的本机验证；`defaults` 写入的是当前 macOS 用户的 **Recommended** 策略，不是强制策略。用户偏好、扩展或受管策略可能覆盖它，企业部署应使用正式的策略管理方式。参见 [Chromium macOS 策略说明](https://www.chromium.org/administrators/mac-quick-start/) 和 [Chrome WebRtcIPHandling 策略](https://chromeenterprise.google/policies/#WebRtcIPHandling)。
+
+先读取并自行记录原值；提示键不存在时，也要记下“原先未设置”。只读取这个键，避免导出整个浏览器偏好：
+
+```sh
+defaults read com.google.Chrome WebRtcIPHandling
+```
+
+确认未与已有管理策略冲突后，设置：
+
+```sh
+defaults write com.google.Chrome WebRtcIPHandling -string disable_non_proxied_udp
+```
+
+在 `chrome://policy` 点击 **Reload policies**；若未生效，保存浏览器中的工作后完全退出并重新打开 Chrome。确认该键的值正确、状态为 **OK**，并查看实际策略级别。随后保持平时的 TUN、代理和分流设置，重新加载 WebRTC 检测页，等待检测完成，确认不再返回不期望的公网候选地址；同时测试常用网站及需要的网页音视频通话。对实际使用的每个 Chrome 个人资料分别验证。
+
+撤销时，若原先未设置该键：
+
+```sh
+defaults delete com.google.Chrome WebRtcIPHandling
+```
+
+若原先已有值，应使用 `defaults write com.google.Chrome WebRtcIPHandling -string '原先记录的值'` 恢复，不能直接删除。撤销后同样重新加载策略或重启，并复测。
+
+检测页的“WebRTC 已禁用或无泄露”仅说明该次探针未得到可展示的地址；不证明所有流量都经过专用出口，也不验证 DNS、断网或休眠唤醒保护。此设置不覆盖 Safari、其他应用或 Claude Code；普通代理与专用代理的出口不同，可以是分流设计的正常结果。
+
 ## 边界
 
 - 不包含原电脑两个业务服务器的直连例外，迁移到原环境时要从本地配置保留。
