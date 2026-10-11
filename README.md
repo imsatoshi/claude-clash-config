@@ -28,6 +28,20 @@
 5. Claude Code 可在本地环境或用户 settings.json 的 env 中设置 `HTTP_PROXY`、`HTTPS_PROXY` 为 `http://127.0.0.1:17898`。这个设置不会自动覆盖工具启动的每一个子进程。
 6. 本地验证：`python3 verify.py`，需要 Python PyYAML 和 Node.js。填写节点后，再用本机 Mihomo 的 `-t -f clash.local.yaml` 检查。
 
+## DNS 64/65 开关（默认开启）
+
+扩展脚本顶部的 `BLOCK_DNS_64_65 = true` 为 Mihomo 管理的 DNS 客户端统一加入 `disable-qtype-64=true` 和 `disable-qtype-65=true`。覆盖默认、引导、直连、代理节点及域名策略中的解析地址，保留原来的 `DIRECT`、`Proxy`、`Claude-ISP` 出口。它不是 Clash 的 Global 代理模式，国内分流规则不变。
+
+Mihomo v1.19.21 的 fake-IP 处理本身会对适用域名的 SVCB/HTTPS 查询返回空答案；显式开关还覆盖跳过 fake-IP、实际经过这些上游 DNS 客户端的查询。对应类型在发送到上游前返回空答案，而不是制造超时；其他类型按原解析路径处理。参见 [DNS 参数文档](https://wiki.metacubex.one/config/dns/#disable-qtype-int) 和 [该版本实现](https://github.com/MetaCubeX/mihomo/blob/v1.19.21/dns/util.go)。
+
+在 Clash Verge **当前订阅关联的扩展脚本**中修改开关，保存并重新应用配置；不要只编辑生成的运行文件。静态 YAML 示例已包含开启后的参数，修改脚本不会自动改变单独导入的 YAML，必须重新运行扩展脚本生成并加载配置。
+
+应用前备份本机扩展脚本和运行配置，真实节点凭据留在本机。验证时，除普通域名外，还要用已知存在 HTTPS/SVCB 记录的 fake-IP 排除域名进行前后对照，检查 UDP/TCP DNS 空答案、正常 A 解析、国内直连和两个代理出口；仅在 fake-IP 域名上得到空答案不能证明新增开关有效。`python3 verify.py` 检查参数覆盖、重复生成与开关往返，不代替实际网络验证。
+
+撤销显式过滤时改为 `BLOCK_DNS_64_65 = false` 并重新应用；脚本会去掉自己管理的两个参数。**关闭开关不会取消 fake-IP 原有的空答案行为。** 若本次变更导致连通性回归，恢复备份并重新加载。
+
+范围仅限经过 Mihomo 这些 DNS 客户端的解析，不包括应用独立发出的 DoH/DoT、操作系统 mDNS 等旁路。过滤可能影响服务发现、连接优化和 ECH 配置获取，不能保证所有网站或应用无影响，也不是防封号或系统级防泄漏保证。
+
 ## Chrome WebRTC 隐私设置（macOS，可选）
 
 网页的 WebRTC/STUN 请求可能访问不属于 Claude 的服务器，因此 Claude 域名规则不能保证这些请求使用专用出口。检测页显示另一个代理出口，只能说明出口不一致，不能单凭这一点认定真实公网 IP 已泄露。

@@ -1,5 +1,17 @@
 // Active split-routing extension. Claude uses the dedicated Tokyo ISP.
 // Keep rule mode and TUN enabled in Clash Verge settings.
+// Controls Mihomo DNS clients only, not applications' independent DoH/DoT.
+const BLOCK_DNS_64_65 = true;
+
+function withDnsTypeFilter(address) {
+  const hash = address.indexOf("#");
+  const base = hash < 0 ? address : address.slice(0, hash);
+  const params = (hash < 0 ? [] : address.slice(hash + 1).split("&"))
+    .filter(p => p && !/^disable-qtype-(64|65)(=|$)/.test(p));
+  if (BLOCK_DNS_64_65) params.push("disable-qtype-64=true", "disable-qtype-65=true");
+  return base + (params.length ? "#" + params.join("&") : "");
+}
+
 function main(config) {
   const group = (config["proxy-groups"] || []).find(g => g.name === "Proxy");
   const nodes = new Set((config.proxies || []).map(p => p.name));
@@ -134,5 +146,12 @@ function main(config) {
       "login.tailscale.com", "derp*.tailscale.com"
     ])]
   };
+  // Normalize all resolver addresses once, retaining DIRECT/Proxy/Claude-ISP.
+  // Stripping our old parameters first makes both regeneration and disabling safe.
+  for (const field of ["default-nameserver", "nameserver", "fallback", "proxy-server-nameserver", "direct-nameserver"])
+    config.dns[field] = config.dns[field].map(withDnsTypeFilter);
+  for (const field of ["nameserver-policy", "proxy-server-nameserver-policy"])
+    for (const domain of Object.keys(config.dns[field]))
+      config.dns[field][domain] = config.dns[field][domain].map(withDnsTypeFilter);
   return config;
 }
